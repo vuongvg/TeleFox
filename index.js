@@ -87,12 +87,62 @@ setTimeout(() => {
 function GetLocalStorageItems() {
   document.getElementById('splashReplacer').style.display = 'none';
   let data = {};
+
+  // Lấy tất cả các mục trong localStorage
   for (let i = 0; i < localStorage.length; i++) {
     let key = localStorage.key(i);
     data[key] = localStorage.getItem(key);
   }
+
   console.log('LocalStorage data list: ', data);
-  window['DevGame'].SendMessage('HandleWebCall', 'HandleData', JSON.stringify(data))
+  console.log('search: ', window.location.search);
+
+  // Xử lý tham số tìm kiếm
+  const dataSearch = window.location.search.replace('?', '').split('&');
+
+  let token = dataSearch.find(el => el.includes('token='));
+  if (token) token = token.replace('token=', '');
+  data['token'] = token;
+
+  // Thêm evt vào data
+  data['evt'] = "USER_INFO";
+
+  console.log('dataFinal', data);
+
+  window['DevGame'].SendMessage('HandleWebCall', 'HandleData', JSON.stringify(data));
 }
+
+function CallRequestBuySkin(SkinId, PriceValue) {
+  PriceValue = parseFloat(PriceValue);
+  PriceValue = PriceValue.toFixed(5);
+  PriceValue = parseFloat(PriceValue);
+
+  console.log('CallRequestBuySkin in js', SkinId, PriceValue);
+
+  window.parent.postMessage({
+    type: 'BUY_ITEM_GAME',
+    data: {
+      itemId: SkinId,
+      count: 1,
+      amount: PriceValue
+    }
+  }, '*');
+}
+
+window.addEventListener('message', (event) => {
+  if (event.data.type == 'TRANSACTION_STATUS') {
+    console.log('data received', event.data)
+
+    let responseData = {
+      evt: event.data.type,
+      status: event.data.status,
+      data: event.data.data
+    };
+
+    window['DevGame'].SendMessage('HandleWebCall', 'HandleData', JSON.stringify(responseData));
+  }
+
+});
+
 
 
